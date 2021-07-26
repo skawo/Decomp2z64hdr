@@ -11,68 +11,33 @@ namespace Decomp2z64hdr
 {
     class Program
     {
+        static string z64hdrlink = "https://github.com/turpaan64/z64hdr/archive/refs/heads/main.zip";
+        static string decomplink = "https://github.com/zeldaret/oot/archive/refs/heads/master.zip";
+        static readonly string TempFolder = "temp";
+        static readonly string z64HDRZip = $"{Program.TempFolder}/z64hdr.zip";
+        static readonly string DecompZip = $"{Program.TempFolder}/decomp.zip";
+        static readonly string zhdrmain = $"{Program.TempFolder}/z64hdr-main";
+        static readonly string ootdebug = $"{Program.TempFolder}/oot-master";
+
         static void Main(string[] args)
         {
-            string z64HDRTarball = "https://github.com/turpaan64/z64hdr/archive/refs/heads/main.zip";
-            string DecompTarball = "https://github.com/zeldaret/oot/archive/refs/heads/master.zip";
-            string z64HDRZip = "temp/z64hdr.zip";
-            string DecompZip = "temp/decomp.zip";
-            string zhdrmain = "temp/z64hdr-main";
-            string ootdebug = "temp/oot-master";
-
-#if !QUICKDEBUG
-
-            if (Directory.Exists("temp"))
-                Directory.Delete("temp", true);
-
-            Directory.CreateDirectory("temp");;
-
             if (args.Length > 0)
-                z64HDRTarball = args[0];
+                Program.z64hdrlink = args[0];
 
             if (args.Length > 1)
-                DecompTarball = args[1];
+                Program.decomplink = args[1];
 
-            Console.WriteLine("Downloading latest z64hdr...");
+#if !QUICKDEBUG
+            if (Directory.Exists(Program.TempFolder))
+                Directory.Delete(Program.TempFolder, true);
 
-            using (var client = new WebClient())
-            {
-                client.Headers.Add("user-agent", "Firefox");
-                client.DownloadFile(
-                    z64HDRTarball,
-                    z64HDRZip);
-            }
+            Directory.CreateDirectory(Program.TempFolder);
 
-            Console.WriteLine("Downloading latest OoT Decomp...");
-
-            using (var client = new WebClient())
-            {
-                client.Headers.Add("user-agent", "Firefox");
-                client.DownloadFile(
-                    DecompTarball,
-                    DecompZip);
-            }
-
-            if (Directory.Exists(zhdrmain))
-                Directory.Delete(zhdrmain, true);
-
-            if (Directory.Exists(ootdebug))
-                Directory.Delete(ootdebug, true);
-
-            Console.WriteLine("Unzipping z64hdr...");
-
-            System.IO.Compression.ZipFile.ExtractToDirectory(z64HDRZip, "temp");
-
-            Console.WriteLine("Unzipping decomp...");
-
-            System.IO.Compression.ZipFile.ExtractToDirectory(DecompZip, "temp");
-
-            File.Delete(DecompZip);
-            File.Delete(z64HDRZip);
+            GetRepos(Program.z64hdrlink, Program.decomplink);
 #endif
 
-            string fnsymbols1_00 = $"{zhdrmain}/oot_10_syms.ld";
-            string fnsymbolsdecomp = $"{zhdrmain}/oot_debug_syms.ld";
+            string fnsymbols1_00 = $"{Program.zhdrmain}/oot_10_syms.ld";
+            string fnsymbolsdecomp = $"{Program.zhdrmain}/oot_debug_syms.ld";
 
             Console.WriteLine("Getting old z64hdr symbols...");
 
@@ -81,14 +46,47 @@ namespace Decomp2z64hdr
 
             Console.WriteLine("Copying the include folder from decomp...");
 
-            string z64hdrincludedir = $"{zhdrmain}/include";
-            string decompincludedir = $"{ootdebug}/include";
+            string z64hdrincludedir = $"{Program.zhdrmain}/include";
+            string decompincludedir = $"{Program.ootdebug}/include";
 
             Directory.Delete(z64hdrincludedir, true);
             CopyFilesRecursively(decompincludedir, z64hdrincludedir);
 
             Makez64HDRChanges(z64hdrincludedir);
+        }
 
+        private static void GetRepos(string linkhdr, string linkdecomp)
+        {
+            Console.WriteLine("Downloading z64hdr...");
+
+            using (var client = new WebClient())
+            {
+                client.Headers.Add("user-agent", "Firefox");
+                client.DownloadFile(linkhdr, Program.z64HDRZip);
+            }
+
+            Console.WriteLine("Downloading OoT Decomp...");
+
+            using (var client = new WebClient())
+            {
+                client.Headers.Add("user-agent", "Firefox");
+                client.DownloadFile(linkdecomp, Program.DecompZip);
+            }
+
+            if (Directory.Exists(Program.zhdrmain))
+                Directory.Delete(Program.zhdrmain, true);
+
+            if (Directory.Exists(Program.ootdebug))
+                Directory.Delete(Program.ootdebug, true);
+
+            Console.WriteLine("Unzipping z64hdr...");
+            System.IO.Compression.ZipFile.ExtractToDirectory(Program.z64HDRZip, Program.TempFolder);
+
+            Console.WriteLine("Unzipping OoT decomp...");
+            System.IO.Compression.ZipFile.ExtractToDirectory(Program.DecompZip, Program.TempFolder);
+
+            File.Delete(Program.DecompZip);
+            File.Delete(Program.z64HDRZip);
         }
 
         private static List<Symbol> GetSymbolsFromLd(string filename)
