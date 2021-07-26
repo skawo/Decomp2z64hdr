@@ -1,0 +1,26 @@
+[
+  {
+    "type": 0,
+    "filename": "z64actor.h",
+    "replacedtext": "",
+    "typedefname" : "ActorInit",
+    "newtext": "    /* 0x0A */ u16 padding;",
+    "lineno": 5
+  },
+  {
+    "type": 0,
+    "filename": "z64actor.h",
+    "replacedtext": "",
+    "typedefname": "Actor",
+    "newtext": "    #ifndef _Z64OVL_10_",
+    "lineno": 56
+  },
+  {
+    "type": 0,
+    "filename": "z64actor.h",
+    "replacedtext": "",
+    "typedefname": "Actor",
+    "newtext": "    #endif",
+    "lineno": 58
+  }
+]
