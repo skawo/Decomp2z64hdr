@@ -13,9 +13,11 @@ namespace Decomp2z64hdr
     {
         static string z64hdrlink = "https://github.com/turpaan64/z64hdr/archive/refs/heads/main.zip";
         static string decomplink = "https://github.com/zeldaret/oot/archive/refs/heads/master.zip";
+        static string maplink = "https://repo.modloader64.com/oot/";
         static readonly string TempFolder = "temp";
         static readonly string z64HDRZip = $"{Program.TempFolder}/z64hdr.zip";
         static readonly string DecompZip = $"{Program.TempFolder}/decomp.zip";
+        static readonly string MapFile = $"{Program.TempFolder}/z64.map";
         static readonly string zhdrmain = $"{Program.TempFolder}/z64hdr-main";
         static readonly string ootdebug = $"{Program.TempFolder}/oot-master";
 
@@ -37,12 +39,12 @@ namespace Decomp2z64hdr
 #endif
 
             string fnsymbols1_00 = $"{Program.zhdrmain}/oot_10_syms.ld";
-            string fnsymbolsdecomp = $"{Program.zhdrmain}/oot_debug_syms.ld";
+            string fnsymbolsdebug = $"{Program.zhdrmain}/oot_debug_syms.ld";
 
             Console.WriteLine("Getting old z64hdr symbols...");
 
             List<Symbol> sym1_00 = GetSymbolsFromLd(fnsymbols1_00);
-            List<Symbol> symdec = GetSymbolsFromLd(fnsymbolsdecomp);
+            List<Symbol> symdebug = GetSymbolsFromLd(fnsymbolsdebug);
 
             Console.WriteLine("Copying the include folder from decomp...");
 
@@ -53,6 +55,60 @@ namespace Decomp2z64hdr
             CopyFilesRecursively(decompincludedir, z64hdrincludedir);
 
             Makez64HDRChanges(z64hdrincludedir);
+
+            List<Symbol> mapdec = ParseDecompMap(MapFile);
+            string d = "";
+
+            foreach (Symbol m in mapdec)
+            {
+                d += "0x" + m.Addr.ToString("X") + " = " + m.Name + ";" + Environment.NewLine;
+            }
+
+
+            File.WriteAllText("test", d);
+
+
+
+
+
+
+
+
+        }
+
+
+        private static List<Symbol> ParseDecompMap(string filename)
+        {
+            List<Symbol> outsymbols = new List<Symbol>();
+            List<string> Lines = File.ReadAllLines(filename).ToList();
+
+
+            foreach (string Line in Lines)
+            {
+                Console.WriteLine(Line);
+
+                string trim = String.Concat(Line.Where(c => !Char.IsWhiteSpace(c)));
+
+                if (!trim.StartsWith("0x"))
+                    continue;
+
+                UInt32 Addr = Convert.ToUInt32(trim.Substring(0, 18), 16);
+
+                if (Addr < 0x80000000)
+                    continue;
+                else
+                {
+
+                    string Symbol = trim.Substring(18);
+
+                    if (Symbol.Contains("="))
+                        Symbol = Symbol.Substring(0, Symbol.IndexOf('='));
+
+                    outsymbols.Add(new Decomp2z64hdr.Symbol(Symbol, Addr));
+                }
+            }
+
+            return outsymbols;
         }
 
         private static void GetRepos(string linkhdr, string linkdecomp)
@@ -71,6 +127,14 @@ namespace Decomp2z64hdr
             {
                 client.Headers.Add("user-agent", "Firefox");
                 client.DownloadFile(linkdecomp, Program.DecompZip);
+            }
+
+            Console.WriteLine("Downloading decomp map...");
+
+            using (WebClient client = new WebClient())
+            {
+                client.Headers.Add("user-agent", "Firefox");
+                client.DownloadFile($"{maplink}z64.map", MapFile);
             }
 
             if (Directory.Exists(Program.zhdrmain))
